@@ -1,0 +1,27 @@
+const express = require('express');
+const router = express.Router();
+const { body } = require('express-validator');
+const tournamentController = require('../controllers/tournaments');
+const { authenticate, requireAdmin } = require('../middleware/auth');
+
+router.get('/', tournamentController.getTournaments);
+router.get('/:id', tournamentController.getTournament);
+
+router.post('/',
+  authenticate,
+  requireAdmin,
+  [
+    body('name').trim().isLength({ min: 3, max: 100 }),
+    body('format').isIn(['single_elim', 'double_elim', 'round_robin']),
+    body('maxPlayers').isIn([4, 8, 16, 32, 64]),
+    body('entryFee').isFloat({ min: 0 }),
+    body('startsAt').isISO8601(),
+    body('registrationDeadline').isISO8601()
+  ],
+  tournamentController.createTournament
+);
+
+router.post('/:id/join', authenticate, tournamentController.joinTournament);
+router.post('/:id/start', authenticate, requireAdmin, tournamentController.startTournament);
+
+module.exports = router;
